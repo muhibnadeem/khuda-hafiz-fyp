@@ -154,20 +154,50 @@ app.post("/signup", async (req, res) => {
     const { email, password, displayName, extra } = req.body;
 
     if (!email) return res.status(400).json({ error: "email required" });
+    if (!FIREBASE_API_KEY) return res.status(500).json({ error: "Firebase API key not configured" });
     if (!password || !displayName) {
       return res.status(400).json({ error: 'password and displayName required' });
     }
 
-    const userRecord = await admin.auth().createUser({ email, password, displayName });
-    const token = await admin.auth().createCustomToken(userRecord.uid);
+    const signupResp = await axios.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+      { email, password, returnSecureToken: true }
+    );
+
+    const firebaseData = signupResp.data;
+    let tokenData = firebaseData;
+
+    try {
+      const updateResp = await axios.post(
+        `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${FIREBASE_API_KEY}`,
+        {
+          idToken: firebaseData.idToken,
+          displayName,
+          returnSecureToken: true,
+        }
+      );
+      tokenData = updateResp.data;
+    } catch (profileErr) {
+      console.warn("Firebase displayName update failed:", profileErr.response?.data || profileErr.message || profileErr);
+    }
 
     res.json({
-      token: { idToken: token },
-      profile: { uid: userRecord.uid, email, displayName, ...extra },
+      token: {
+        idToken: tokenData.idToken || firebaseData.idToken,
+        refreshToken: tokenData.refreshToken || firebaseData.refreshToken,
+      },
+      profile: {
+        uid: firebaseData.localId,
+        email: firebaseData.email || email,
+        displayName,
+        ...extra,
+      },
     });
   } catch (err) {
     console.error('Signup error:', err.response?.data || err.message || err);
-    res.status(400).json({ error: err.response?.data || err.message || String(err) });
+    res.status(400).json({
+      error: err.response?.data?.error?.message || err.response?.data || err.message || String(err),
+    });
   }
 });
 
