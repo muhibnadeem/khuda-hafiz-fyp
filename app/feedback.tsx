@@ -150,6 +150,7 @@ export default function FeedbackScreen() {
             <ActivityIndicator style={{ marginTop: 10 }} color="#2b0e05" />
           ) : (
             <FlatList
+              style={styles.feedbackList}
               data={feedbacks}
               keyExtractor={(item) => item.id || `${item.email || "anon"}-${Math.random()}`}
               renderItem={({ item }) => {
@@ -182,7 +183,9 @@ export default function FeedbackScreen() {
                   <Text style={styles.emptySubtext}>Be the first to share your experience!</Text>
                 </View>
               }
-              contentContainerStyle={{ paddingBottom: 100 }}
+              contentContainerStyle={styles.feedbackListContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             />
           )}
         </View>
@@ -221,7 +224,7 @@ export default function FeedbackScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff8ef" },
 
-  content: { padding: 20 },
+  content: { flex: 1, padding: 20, paddingBottom: 0 },
   title: { fontSize: 18, fontWeight: "600", marginBottom: 6 },
   subtitle: { fontSize: 14, color: "#666", marginBottom: 20 },
 
@@ -272,6 +275,14 @@ const styles = StyleSheet.create({
   refreshText: {
     color: "#2b0e05",
     fontWeight: "600",
+  },
+  feedbackList: {
+    flex: 1,
+    minHeight: 0,
+  },
+  feedbackListContent: {
+    flexGrow: 1,
+    paddingBottom: 120,
   },
   feedbackCard: {
     padding: 16,
